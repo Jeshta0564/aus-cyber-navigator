@@ -144,34 +144,28 @@ export default function App() {
     const engineResults = runObligationEngine(inputs);
 
     // Call Claude API for plain-English narrative only
-    try {
-      const activeStreams = Object.values(engineResults.streams)
-        .filter(s => s.applicable)
-        .map(s => `${s.stream} (${s.deadline || "assess immediately"}): ${s.reasoning.join(" ")}`)
-        .join("\n");
-
-      const prompt = `You are a GRC analyst assistant. A decision engine has analysed a cyber incident scenario and determined the following Australian regulatory notification obligations:
-
-${activeStreams}
-
-Most urgent deadline: ${engineResults.summary.mostUrgentDeadline?.deadline || "None"} to ${engineResults.summary.mostUrgentDeadline?.regulator || "N/A"}
-
-Write a single plain-English paragraph (4-6 sentences) summarising the regulatory situation for this incident. Be direct and specific. Mention the most time-critical obligation first. Do not use bullet points. Do not repeat all the details -- focus on the overall picture and what the organisation needs to prioritise right now. End with a reminder that legal counsel should be engaged before making final notification decisions.`;
-
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+  try {
+      const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 300,
-          messages: [{ role: "user", content: prompt }],
+          inputs,
+          engineResults,
         }),
       });
 
       const data = await response.json();
-      if (data.content && data.content[0]) {
-        setNarrative(data.content[0].text);
+      if (data.narrative) {
+        setNarrative(data.narrative);
       }
+    } catch (err) {
+      setNarrative("Narrative generation unavailable. Please review the detailed obligation breakdown below.");
+    }
+
+const data = await response.json();
+if (data.narrative) {
+  setNarrative(data.narrative);
+}
     } catch (err) {
       setNarrative("Narrative generation unavailable. Please review the detailed obligation breakdown below.");
     }
