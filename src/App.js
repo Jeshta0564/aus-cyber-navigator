@@ -138,14 +138,15 @@ export default function App() {
   const [narrative, setNarrative] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleFormSubmit(inputs) {
+async function handleFormSubmit(inputs) {
     setLoading(true);
 
     // Run the decision engine -- pure logic, no AI
     const engineResults = runObligationEngine(inputs);
 
     // Call Claude API for plain-English narrative only
-  try {
+    let generatedNarrative = "";
+    try {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -157,10 +158,11 @@ export default function App() {
 
       const data = await response.json();
       if (data.narrative) {
+        generatedNarrative = data.narrative;
         setNarrative(data.narrative);
       }
     } catch (err) {
-    setNarrative("Narrative generation unavailable. Please review the detailed obligation breakdown below.");
+      setNarrative("Narrative generation unavailable. Please review the detailed obligation breakdown below.");
     }
 
     // Save scenario to Supabase
@@ -174,7 +176,7 @@ export default function App() {
         streams_triggered: engineResults.summary.totalStreamsTriggered,
         most_urgent_deadline: engineResults.summary.mostUrgentDeadline?.deadline || null,
         most_urgent_regulator: engineResults.summary.mostUrgentDeadline?.regulator || null,
-        narrative: data.narrative || null,
+        narrative: generatedNarrative || null,
         results: engineResults,
       });
     } catch (err) {
@@ -185,6 +187,12 @@ export default function App() {
     setLoading(false);
     setView("results");
   }
+
+    setResults(engineResults);
+    setLoading(false);
+    setView("results");
+  }
+
   function handleReset() {
     setView("form");
     setResults(null);
