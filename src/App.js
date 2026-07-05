@@ -1,3 +1,4 @@
+import { supabase } from "./supabaseClient";
 import { useState } from "react";
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/clerk-react";
 import ScenarioForm from "./ScenarioForm";
@@ -159,14 +160,31 @@ export default function App() {
         setNarrative(data.narrative);
       }
     } catch (err) {
-      setNarrative("Narrative generation unavailable. Please review the detailed obligation breakdown below.");
+    setNarrative("Narrative generation unavailable. Please review the detailed obligation breakdown below.");
+    }
+
+    // Save scenario to Supabase
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || "anonymous";
+      await supabase.from("scenarios").insert({
+        user_id: userId,
+        sector: inputs.sector,
+        incident_type: inputs.incidentType,
+        streams_triggered: engineResults.summary.totalStreamsTriggered,
+        most_urgent_deadline: engineResults.summary.mostUrgentDeadline?.deadline || null,
+        most_urgent_regulator: engineResults.summary.mostUrgentDeadline?.regulator || null,
+        narrative: data.narrative || null,
+        results: engineResults,
+      });
+    } catch (err) {
+      console.error("Failed to save scenario:", err);
     }
 
     setResults(engineResults);
     setLoading(false);
     setView("results");
   }
-
   function handleReset() {
     setView("form");
     setResults(null);
