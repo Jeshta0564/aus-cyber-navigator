@@ -188,11 +188,6 @@ async function handleFormSubmit(inputs) {
     setView("results");
   }
 
-    setResults(engineResults);
-    setLoading(false);
-    setView("results");
-  }
-
   function handleReset() {
     setView("form");
     setResults(null);
