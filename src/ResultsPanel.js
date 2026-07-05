@@ -284,8 +284,7 @@ async function downloadExcel(results, narrative) {
     ["Scope Limitations","This tool covers primary federal notification obligations across the SOCI Act, APRA CPS 234, Privacy Act NDB Scheme, and Corporations Act. It does not cover all state-based obligations, sector-specific variations, or overseas obligations for multinational entities."],
     ["Serious Harm Assessment","The serious harm assessment under the NDB scheme involves subjective legal judgment. The engine applies OAIC guidance as at June 2026 but cannot replace legal advice on threshold determinations."],
     ["APRA Notifications","APRA requires direct communication through its Secure Stakeholder Portal. This tool maps the obligation but does not facilitate the notification itself."],
-    ["Portfolio Piece","This tool was built by Jeshta Rao as a student portfolio project demonstrating practitioner-level understanding of Australian cyber regulatory obligations. It is not a commercial product."],
-  ].forEach(([title, text], i) => {
+   ].forEach(([title, text], i) => {
     const r = 4 + i*3;
     ws4.getRow(r).height = 18; ws4.getRow(r+1).height = 36; ws4.getRow(r+2).height = 6;
     cell(ws4,`B${r}`,title,LTBLUE,BLUE,true,false);
