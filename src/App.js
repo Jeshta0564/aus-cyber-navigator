@@ -162,14 +162,6 @@ export default function App() {
       setNarrative("Narrative generation unavailable. Please review the detailed obligation breakdown below.");
     }
 
-const data = await response.json();
-if (data.narrative) {
-  setNarrative(data.narrative);
-}
-    } catch (err) {
-      setNarrative("Narrative generation unavailable. Please review the detailed obligation breakdown below.");
-    }
-
     setResults(engineResults);
     setLoading(false);
     setView("results");
