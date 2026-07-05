@@ -1,25 +1,263 @@
-import logo from './logo.svg';
-import './App.css';
+import { useState } from "react";
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/clerk-react";
+import ScenarioForm from "./ScenarioForm";
+import ResultsPanel from "./ResultsPanel";
+import { runObligationEngine } from "./obligationEngine";
 
-function App() {
+const styles = {
+  app: {
+    background: "#0f1923",
+    minHeight: "100vh",
+    color: "#fff",
+    fontFamily: "Arial, sans-serif",
+  },
+  nav: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "16px 32px",
+    borderBottom: "1px solid #1e3a5f",
+    background: "#0a1520",
+  },
+  navLeft: {
+    display: "flex",
+    flexDirection: "column",
+  },
+  navTitle: {
+    fontSize: "15px",
+    fontWeight: "700",
+    color: "#fff",
+    letterSpacing: "0.2px",
+  },
+  navSub: {
+    fontSize: "11px",
+    color: "#556677",
+    marginTop: "2px",
+  },
+  landing: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    height: "100vh",
+    background: "#0f1923",
+    textAlign: "center",
+    padding: "24px",
+  },
+  badge: {
+    display: "inline-block",
+    padding: "4px 14px",
+    background: "#1B3A6B22",
+    border: "1px solid #2E75B6",
+    borderRadius: "20px",
+    fontSize: "11px",
+    color: "#2E75B6",
+    marginBottom: "24px",
+    letterSpacing: "0.5px",
+  },
+  landingTitle: {
+    fontSize: "36px",
+    fontWeight: "700",
+    color: "#fff",
+    marginBottom: "12px",
+    lineHeight: "1.3",
+    maxWidth: "600px",
+  },
+  landingDesc: {
+    fontSize: "15px",
+    color: "#8899aa",
+    marginBottom: "40px",
+    maxWidth: "520px",
+    lineHeight: "1.7",
+  },
+  signInBtn: {
+    background: "#2E75B6",
+    color: "#fff",
+    border: "none",
+    padding: "14px 36px",
+    borderRadius: "8px",
+    fontSize: "15px",
+    fontWeight: "600",
+    cursor: "pointer",
+    marginBottom: "16px",
+  },
+  featureGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    gap: "16px",
+    maxWidth: "640px",
+    marginTop: "48px",
+  },
+  featureCard: {
+    background: "#111e2d",
+    border: "1px solid #1e3a5f",
+    borderRadius: "8px",
+    padding: "16px",
+    textAlign: "left",
+  },
+  featureTitle: {
+    fontSize: "12px",
+    fontWeight: "600",
+    color: "#2E75B6",
+    marginBottom: "6px",
+  },
+  featureDesc: {
+    fontSize: "11px",
+    color: "#556677",
+    lineHeight: "1.6",
+  },
+  loadingOverlay: {
+    position: "fixed",
+    top: 0, left: 0, right: 0, bottom: 0,
+    background: "#0f1923cc",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 100,
+  },
+  loadingText: {
+    color: "#2E75B6",
+    fontSize: "16px",
+    marginTop: "16px",
+  },
+  spinner: {
+    width: "40px",
+    height: "40px",
+    border: "3px solid #1e3a5f",
+    borderTop: "3px solid #2E75B6",
+    borderRadius: "50%",
+    animation: "spin 1s linear infinite",
+  },
+};
+
+export default function App() {
+  const [view, setView] = useState("form");
+  const [results, setResults] = useState(null);
+  const [narrative, setNarrative] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleFormSubmit(inputs) {
+    setLoading(true);
+
+    // Run the decision engine -- pure logic, no AI
+    const engineResults = runObligationEngine(inputs);
+
+    // Call Claude API for plain-English narrative only
+    try {
+      const activeStreams = Object.values(engineResults.streams)
+        .filter(s => s.applicable)
+        .map(s => `${s.stream} (${s.deadline || "assess immediately"}): ${s.reasoning.join(" ")}`)
+        .join("\n");
+
+      const prompt = `You are a GRC analyst assistant. A decision engine has analysed a cyber incident scenario and determined the following Australian regulatory notification obligations:
+
+${activeStreams}
+
+Most urgent deadline: ${engineResults.summary.mostUrgentDeadline?.deadline || "None"} to ${engineResults.summary.mostUrgentDeadline?.regulator || "N/A"}
+
+Write a single plain-English paragraph (4-6 sentences) summarising the regulatory situation for this incident. Be direct and specific. Mention the most time-critical obligation first. Do not use bullet points. Do not repeat all the details -- focus on the overall picture and what the organisation needs to prioritise right now. End with a reminder that legal counsel should be engaged before making final notification decisions.`;
+
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 300,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+
+      const data = await response.json();
+      if (data.content && data.content[0]) {
+        setNarrative(data.content[0].text);
+      }
+    } catch (err) {
+      setNarrative("Narrative generation unavailable. Please review the detailed obligation breakdown below.");
+    }
+
+    setResults(engineResults);
+    setLoading(false);
+    setView("results");
+  }
+
+  function handleReset() {
+    setView("form");
+    setResults(null);
+    setNarrative("");
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div style={styles.app}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+      <SignedOut>
+        <div style={styles.landing}>
+          <div style={styles.badge}>Australian GRC Tool · June 2026</div>
+          <h1 style={styles.landingTitle}>
+            Cyber Incident Obligation Navigator
+          </h1>
+          <p style={styles.landingDesc}>
+            Determine your Australian regulatory notification obligations in minutes.
+            Built on encoded regulatory logic across SOCI Act, APRA CPS 234,
+            Privacy Act NDB Scheme, and Corporations Act.
+          </p>
+          <SignInButton mode="modal">
+            <button style={styles.signInBtn}>Sign in to continue →</button>
+          </SignInButton>
+          <p style={{ fontSize: "12px", color: "#556677" }}>
+            Sign in with Google or GitHub
+          </p>
+          <div style={styles.featureGrid}>
+            <div style={styles.featureCard}>
+              <div style={styles.featureTitle}>Rules-Based Engine</div>
+              <div style={styles.featureDesc}>
+                Regulatory logic encoded from primary Australian sources. Not AI guessing.
+              </div>
+            </div>
+            <div style={styles.featureCard}>
+              <div style={styles.featureTitle}>4 Obligation Streams</div>
+              <div style={styles.featureDesc}>
+                SOCI Act, CPS 234, NDB Scheme, and Corporations Act assessed simultaneously.
+              </div>
+            </div>
+            <div style={styles.featureCard}>
+              <div style={styles.featureTitle}>Serious Harm Scoring</div>
+              <div style={styles.featureDesc}>
+                Structured NDB serious harm assessment based on OAIC guidance.
+              </div>
+            </div>
+          </div>
+        </div>
+      </SignedOut>
+
+      <SignedIn>
+        {loading && (
+          <div style={styles.loadingOverlay}>
+            <div style={styles.spinner} />
+            <div style={styles.loadingText}>Running obligation engine...</div>
+          </div>
+        )}
+
+        <nav style={styles.nav}>
+          <div style={styles.navLeft}>
+            <div style={styles.navTitle}>AUS Cyber Incident Obligation Navigator</div>
+            <div style={styles.navSub}>
+              Jeshta Rao · RMIT University · Master of Cybersecurity · June 2026
+            </div>
+          </div>
+          <UserButton />
+        </nav>
+
+        {view === "form" && <ScenarioForm onSubmit={handleFormSubmit} />}
+        {view === "results" && results && (
+          <ResultsPanel
+            results={results}
+            narrative={narrative}
+            onReset={handleReset}
+          />
+        )}
+      </SignedIn>
     </div>
   );
 }
-
-export default App;
