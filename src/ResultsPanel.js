@@ -1,5 +1,3 @@
-import ExcelJS from "exceljs";
-
 const DEADLINE_COLORS = {
   "12 HOURS": { bg: "#8B1A1A22", border: "#8B1A1A", text: "#ff6b6b" },
   "IMMEDIATELY": { bg: "#8B1A1A22", border: "#8B1A1A", text: "#ff6b6b" },
@@ -41,7 +39,7 @@ const s = {
 };
 
 async function downloadExcel(results, narrative) {
-  const ExcelJS = await import("exceljs");
+  const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
   wb.creator = "AUS Cyber Incident Obligation Navigator";
   wb.created = new Date();
