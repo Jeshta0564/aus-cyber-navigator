@@ -1,6 +1,6 @@
 import { supabase } from "./supabaseClient";
 import { useState } from "react";
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/clerk-react";
 import ScenarioForm from "./ScenarioForm";
 import ResultsPanel from "./ResultsPanel";
 import { runObligationEngine } from "./obligationEngine";
@@ -137,6 +137,7 @@ export default function App() {
   const [results, setResults] = useState(null);
   const [narrative, setNarrative] = useState("");
   const [loading, setLoading] = useState(false);
+  const { user } = useUser();
 
 async function handleFormSubmit(inputs) {
     setLoading(true);
@@ -167,7 +168,6 @@ async function handleFormSubmit(inputs) {
 
     // Save scenario to Supabase
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       const userId = user?.id || "anonymous";
       await supabase.from("scenarios").insert({
         user_id: userId,
