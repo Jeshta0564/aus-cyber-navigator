@@ -20,7 +20,7 @@ ${activeStreams}
 
 Most urgent deadline: ${engineResults.summary.mostUrgentDeadline?.deadline || "None"} to ${engineResults.summary.mostUrgentDeadline?.regulator || "N/A"}
 
-Write a single plain-English paragraph (4-6 sentences) summarising the regulatory situation for this incident. Be direct and specific. Mention the most time-critical obligation first. Do not use bullet points. Do not repeat all the details - focus on the overall picture and what the organisation needs to prioritise right now. End with a reminder that legal counsel should be engaged before making final notification decisions.`;
+Write a single plain-English paragraph (4-6 sentences) summarising the regulatory situation for this incident. Be direct and specific. Mention the most time-critical obligation first. Do not use bullet points. Do not use dashes of any kind - use commas or full stops instead. Do not repeat all the details - focus on the overall picture and what the organisation needs to prioritise right now. End with a reminder that legal counsel should be engaged before making final notification decisions.`;
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
