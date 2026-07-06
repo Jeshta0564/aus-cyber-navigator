@@ -138,7 +138,6 @@ export default function App() {
   const [results, setResults] = useState(null);
   const [narrative, setNarrative] = useState("");
   const [loading, setLoading] = useState(false);
-  const [historyScenario, setHistoryScenario] = useState(null);
   const { user } = useUser();
 
   async function handleFormSubmit(inputs) {
