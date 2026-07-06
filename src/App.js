@@ -211,7 +211,16 @@ export default function App() {
             Sign in with Google or GitHub
           </p>
           <p style={{ fontSize: "11px", color: "#334455", marginTop: "24px" }}>
-            Designed and built by <span style={{ color: "#2E75B6" }}>Jeshta Rao</span> · RMIT University · Master of Cybersecurity · June 2026
+            Designed and built by{" "}
+            
+              href="https://www.linkedin.com/in/jeshta-rao-3491a6197"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: "#2E75B6", textDecoration: "none" }}
+            >
+              Jeshta Rao
+            </a>
+            {" "}· GRC Analyst · ISO/IEC 27001 Lead Auditor
           </p>
           <div style={styles.featureGrid}>
             <div style={styles.featureCard}>
@@ -248,7 +257,7 @@ export default function App() {
           <div style={styles.navLeft}>
             <div style={styles.navTitle}>AUS Cyber Incident Obligation Navigator</div>
             <div style={styles.navSub}>
-              Designed and built by Jeshta Rao · RMIT University · Master of Cybersecurity · June 2026
+              Designed and built by Jeshta Rao · GRC Analyst · ISO/IEC 27001 Lead Auditor
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>

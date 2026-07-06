@@ -261,13 +261,13 @@ export default function AboutPage({ onBack }) {
           <div>
             <div style={s.builderName}>Jeshta Rao</div>
             <div style={s.builderDetails}>
-              Master of Cybersecurity · RMIT University, Melbourne<br />
+              GRC Analyst ·  Melbourne<br />
               ISO/IEC 27001 Lead Auditor<br />
-              GRC Experience · Bosch Automotive · June 2026
+              June 2026
             </div>
           </div>
           <a
-            href="https://www.linkedin.com/in/jeshta-rao"
+            href="https://www.linkedin.com/in/jeshta-rao-3491a6197"
             target="_blank"
             rel="noreferrer"
             style={s.linkedinBtn}
