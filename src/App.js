@@ -1,3 +1,4 @@
+import ScenarioHistory from "./ScenarioHistory";
 import { supabase } from "./supabaseClient";
 import { useState } from "react";
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/clerk-react";
@@ -137,9 +138,10 @@ export default function App() {
   const [results, setResults] = useState(null);
   const [narrative, setNarrative] = useState("");
   const [loading, setLoading] = useState(false);
+  const [historyScenario, setHistoryScenario] = useState(null);
   const { user } = useUser();
 
-async function handleFormSubmit(inputs) {
+  async function handleFormSubmit(inputs) {
     setLoading(true);
 
     // Run the decision engine -- pure logic, no AI
@@ -253,7 +255,15 @@ async function handleFormSubmit(inputs) {
               Jeshta Rao · RMIT University · Master of Cybersecurity · June 2026
             </div>
           </div>
-          <UserButton />
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <button
+              style={{ padding: "8px 16px", background: view === "history" ? "#2E75B622" : "transparent", color: view === "history" ? "#2E75B6" : "#8899aa", border: "1px solid #1e3a5f", borderRadius: "6px", fontSize: "12px", cursor: "pointer" }}
+              onClick={() => setView("history")}
+            >
+              My Scenarios
+            </button>
+            <UserButton />
+          </div>
         </nav>
 
         {view === "form" && <ScenarioForm onSubmit={handleFormSubmit} />}
@@ -262,6 +272,16 @@ async function handleFormSubmit(inputs) {
             results={results}
             narrative={narrative}
             onReset={handleReset}
+          />
+        )}
+        {view === "history" && (
+          <ScenarioHistory
+            onBack={() => setView("form")}
+            onViewScenario={(sc) => {
+              setResults(sc.results);
+              setNarrative(sc.narrative || "");
+              setView("results");
+            }}
           />
         )}
       </SignedIn>
