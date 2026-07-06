@@ -1,5 +1,6 @@
 import ScenarioHistory from "./ScenarioHistory";
 import { supabase } from "./supabaseClient";
+import AboutPage from "./AboutPage";
 import { useState } from "react";
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/clerk-react";
 import ScenarioForm from "./ScenarioForm";
@@ -143,21 +144,15 @@ export default function App() {
   async function handleFormSubmit(inputs) {
     setLoading(true);
 
-    // Run the decision engine -- pure logic, no AI
     const engineResults = runObligationEngine(inputs);
 
-    // Call Claude API for plain-English narrative only
     let generatedNarrative = "";
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          inputs,
-          engineResults,
-        }),
+        body: JSON.stringify({ inputs, engineResults }),
       });
-
       const data = await response.json();
       if (data.narrative) {
         generatedNarrative = data.narrative;
@@ -167,7 +162,6 @@ export default function App() {
       setNarrative("Narrative generation unavailable. Please review the detailed obligation breakdown below.");
     }
 
-    // Save scenario to Supabase
     try {
       const userId = user?.id || "anonymous";
       await supabase.from("scenarios").insert({
@@ -216,6 +210,9 @@ export default function App() {
           <p style={{ fontSize: "12px", color: "#556677" }}>
             Sign in with Google or GitHub
           </p>
+          <p style={{ fontSize: "11px", color: "#334455", marginTop: "24px" }}>
+            Designed and built by <span style={{ color: "#2E75B6" }}>Jeshta Rao</span> · RMIT University · Master of Cybersecurity · June 2026
+          </p>
           <div style={styles.featureGrid}>
             <div style={styles.featureCard}>
               <div style={styles.featureTitle}>Rules-Based Engine</div>
@@ -251,7 +248,7 @@ export default function App() {
           <div style={styles.navLeft}>
             <div style={styles.navTitle}>AUS Cyber Incident Obligation Navigator</div>
             <div style={styles.navSub}>
-              Jeshta Rao · RMIT University · Master of Cybersecurity · June 2026
+              Designed and built by Jeshta Rao · RMIT University · Master of Cybersecurity · June 2026
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
@@ -260,6 +257,12 @@ export default function App() {
               onClick={() => setView("history")}
             >
               My Scenarios
+            </button>
+            <button
+              style={{ padding: "8px 16px", background: view === "about" ? "#2E75B622" : "transparent", color: view === "about" ? "#2E75B6" : "#8899aa", border: "1px solid #1e3a5f", borderRadius: "6px", fontSize: "12px", cursor: "pointer" }}
+              onClick={() => setView("about")}
+            >
+              About
             </button>
             <UserButton />
           </div>
@@ -282,6 +285,9 @@ export default function App() {
               setView("results");
             }}
           />
+        )}
+        {view === "about" && (
+          <AboutPage onBack={() => setView("form")} />
         )}
       </SignedIn>
     </div>
