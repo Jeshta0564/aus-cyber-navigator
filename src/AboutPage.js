@@ -155,20 +155,45 @@ const s = {
   },
 };
 
+const frameworks = [
+  {
+    name: "SOCI Act 2018",
+    desc: "12-hour and 72-hour mandatory reporting to ASD for cyber incidents affecting critical infrastructure assets. Source: Security of Critical Infrastructure Act 2018 (Cth) and ASD ACSC guidance.",
+  },
+  {
+    name: "APRA CPS 234",
+    desc: "72-hour material incident notification and 10 business day control weakness notification for APRA-regulated entities. Source: Prudential Standard CPS 234 Information Security.",
+  },
+  {
+    name: "Privacy Act - NDB Scheme",
+    desc: "Eligible data breach notification to OAIC and affected individuals. Three-condition test including serious harm assessment. Source: Privacy Act 1988 Part IIIC and OAIC guidance including H1 2024 report.",
+  },
+  {
+    name: "Corporations Act 2001",
+    desc: "Immediate continuous disclosure obligations for ASX-listed entities and AFSL holders where an incident may materially affect share price. Source: Corporations Act s.674 and ASX Listing Rule 3.1.",
+  },
+];
+
+const limitations = [
+  ["Decision support only", "This tool does not constitute legal advice. Organisations must engage qualified legal counsel before making any regulatory notification decisions."],
+  ["Federal obligations only", "This tool covers primary federal notification obligations. It does not cover state-based privacy obligations, sector-specific reporting to state regulators, or overseas obligations for multinational entities."],
+  ["Serious harm is a judgement call", "The NDB scheme's serious harm threshold involves subjective legal judgment. The engine applies OAIC guidance as at June 2026 but cannot replace legal advice on threshold determinations."],
+  ["Regulatory currency", "Australian cyber legislation changes. This tool reflects the June 2026 position and does not update automatically. Verify current obligations before relying on outputs."],
+  ["APRA notifications require direct contact", "This tool maps APRA notification obligations but does not facilitate the notification itself. APRA requires direct communication through its Secure Stakeholder Portal."],
+];
+
 export default function AboutPage({ onBack }) {
   return (
     <div style={s.container}>
+
       <div style={s.header}>
         <div>
           <div style={s.title}>About This Tool</div>
-          <div style={s.subtitle}>
-            What it is, how it works, and what it does not do
-          </div>
+          <div style={s.subtitle}>What it is, how it works, and what it does not do</div>
         </div>
         <button style={s.backBtn} onClick={onBack}>- Back</button>
       </div>
 
-      {/* Version */}
       <div style={s.section}>
         <div style={s.sectionTitle}>Version and Currency</div>
         <div style={s.versionBadge}>Version 1.0 - June 2026</div>
@@ -180,7 +205,6 @@ export default function AboutPage({ onBack }) {
         </p>
       </div>
 
-      {/* What it does */}
       <div style={s.section}>
         <div style={s.sectionTitle}>What This Tool Does</div>
         <p style={s.para}>
@@ -191,41 +215,21 @@ export default function AboutPage({ onBack }) {
         </p>
       </div>
 
-      {/* Frameworks covered */}
       <div style={s.section}>
         <div style={s.sectionTitle}>Frameworks and Sources Covered</div>
         <p style={s.para}>
           The decision engine covers four Australian notification obligation streams. Each stream's logic is built directly from the primary source documents listed below.
         </p>
         <div style={s.frameworkGrid}>
-          <div style={s.frameworkCard}>
-            <div style={s.frameworkName}>SOCI Act 2018</div>
-            <div style={s.frameworkDesc}>
-              12-hour and 72-hour mandatory reporting to ASD for cyber incidents affecting critical infrastructure assets. Source: Security of Critical Infrastructure Act 2018 (Cth) and ASD ACSC guidance.
+          {frameworks.map((f, i) => (
+            <div key={i} style={s.frameworkCard}>
+              <div style={s.frameworkName}>{f.name}</div>
+              <div style={s.frameworkDesc}>{f.desc}</div>
             </div>
-          </div>
-          <div style={s.frameworkCard}>
-            <div style={s.frameworkName}>APRA CPS 234</div>
-            <div style={s.frameworkDesc}>
-              72-hour material incident notification and 10 business day control weakness notification for APRA-regulated entities. Source: Prudential Standard CPS 234 Information Security.
-            </div>
-          </div>
-          <div style={s.frameworkCard}>
-            <div style={s.frameworkName}>Privacy Act - NDB Scheme</div>
-            <div style={s.frameworkDesc}>
-              Eligible data breach notification to OAIC and affected individuals. Three-condition test including serious harm assessment. Source: Privacy Act 1988 Part IIIC and OAIC guidance including H1 2024 report.
-            </div>
-          </div>
-          <div style={s.frameworkCard}>
-            <div style={s.frameworkName}>Corporations Act 2001</div>
-            <div style={s.frameworkDesc}>
-              Immediate continuous disclosure obligations for ASX-listed entities and AFSL holders where an incident may materially affect share price. Source: Corporations Act s.674 and ASX Listing Rule 3.1.
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Validation */}
       <div style={s.section}>
         <div style={s.sectionTitle}>How the Engine Logic Was Validated</div>
         <p style={s.para}>
@@ -239,16 +243,9 @@ export default function AboutPage({ onBack }) {
         </div>
       </div>
 
-      {/* Limitations */}
       <div style={s.section}>
         <div style={s.sectionTitle}>Limitations</div>
-        {[
-          ["Decision support only", "This tool does not constitute legal advice. Organisations must engage qualified legal counsel before making any regulatory notification decisions."],
-          ["Federal obligations only", "This tool covers primary federal notification obligations. It does not cover state-based privacy obligations, sector-specific reporting to state regulators, or overseas obligations for multinational entities."],
-          ["Serious harm is a judgement call", "The NDB scheme's serious harm threshold involves subjective legal judgment. The engine applies OAIC guidance as at June 2026 but cannot replace legal advice on threshold determinations."],
-          ["Regulatory currency", "Australian cyber legislation changes. This tool reflects the June 2026 position and does not update automatically. Verify current obligations before relying on outputs."],
-          ["APRA notifications require direct contact", "This tool maps APRA notification obligations but does not facilitate the notification itself. APRA requires direct communication through its Secure Stakeholder Portal."],
-        ].map(([title, text], i) => (
+        {limitations.map(([title, text], i) => (
           <div key={i} style={s.limitationItem}>
             <div style={s.limitationDot} />
             <div style={s.limitationText}>
@@ -258,7 +255,6 @@ export default function AboutPage({ onBack }) {
         ))}
       </div>
 
-      {/* Builder */}
       <div style={s.section}>
         <div style={s.sectionTitle}>Built By</div>
         <div style={s.builderCard}>
