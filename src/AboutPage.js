@@ -266,7 +266,7 @@ export default function AboutPage({ onBack }) {
               GRC Experience · Bosch Automotive · June 2026
             </div>
           </div>
-          
+          <a
             href="https://www.linkedin.com/in/jeshta-rao"
             target="_blank"
             rel="noreferrer"
