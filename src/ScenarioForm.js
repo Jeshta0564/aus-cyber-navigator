@@ -172,21 +172,80 @@ const styles = {
     color: "#ff6b6b",
     lineHeight: "1.6",
   },
-  submitBtn: (enabled) => ({
-    width: "100%",
+  comparisonBanner: {
+    background: "#2E75B611",
+    border: "1px solid #2E75B6",
+    borderRadius: "8px",
+    padding: "14px 20px",
+    marginBottom: "24px",
+    fontSize: "13px",
+    color: "#2E75B6",
+    lineHeight: "1.6",
+  },
+  btnRow: {
+    display: "flex",
+    gap: "12px",
+    marginTop: "8px",
+    flexWrap: "wrap",
+  },
+  primaryBtn: {
+    flex: 1,
     padding: "15px",
-    background: enabled ? "#2E75B6" : "#1e3a5f",
-    color: enabled ? "#fff" : "#556677",
+    background: "#2E75B6",
+    color: "#fff",
     border: "none",
     borderRadius: "8px",
     fontSize: "15px",
     fontWeight: "600",
     cursor: "pointer",
-    marginTop: "8px",
     letterSpacing: "0.3px",
     transition: "background 0.2s",
-  }),
+  },
+  secondaryBtn: {
+    flex: 1,
+    padding: "15px",
+    background: "transparent",
+    color: "#2E75B6",
+    border: "1px solid #2E75B6",
+    borderRadius: "8px",
+    fontSize: "15px",
+    fontWeight: "600",
+    cursor: "pointer",
+    letterSpacing: "0.3px",
+    transition: "all 0.2s",
+  },
+  disabledBtn: {
+    flex: 1,
+    padding: "15px",
+    background: "#1e3a5f",
+    color: "#556677",
+    border: "none",
+    borderRadius: "8px",
+    fontSize: "15px",
+    fontWeight: "600",
+    cursor: "not-allowed",
+    letterSpacing: "0.3px",
+  },
 };
+
+function formatSector(sector) {
+  if (!sector) return "";
+  return sector.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function formatIncident(type) {
+  if (!type) return "";
+  const map = {
+    ransomware: "Ransomware",
+    data_breach: "Data Breach",
+    bec: "Business Email Compromise",
+    insider_threat: "Insider Threat",
+    ddos: "DDoS",
+    supply_chain: "Supply Chain",
+    other: "Other",
+  };
+  return map[type] || type;
+}
 
 function YesNoUnsure({ value, onChange, yesLabel = "YES", noLabel = "NO", hasError }) {
   return (
@@ -231,7 +290,13 @@ function Question({ id, label, explanation, children, hasError }) {
   );
 }
 
-export default function ScenarioForm({ onSubmit }) {
+export default function ScenarioForm({
+  onSubmit,
+  onCompare,
+  isComparisonMode = false,
+  lockedSlot = null,
+  lockingSlot = null,
+}) {
   const [form, setForm] = useState({
     sector: "",
     incidentType: "",
@@ -273,7 +338,6 @@ export default function ScenarioForm({ onSubmit }) {
     }));
   };
 
-  // Convert unsure to true conservatively for the engine
   const normalise = (val) => {
     if (val === "unsure") return true;
     return val;
@@ -310,16 +374,12 @@ export default function ScenarioForm({ onSubmit }) {
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setShowErrorBanner(true);
-      // Scroll to first error
       const firstErrorKey = Object.keys(newErrors)[0];
       const el = document.getElementById(`q-${firstErrorKey}`);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
-    // Normalise unsure values before passing to engine
     const normalisedForm = {
       ...form,
       isResponsibleEntity: normalise(form.isResponsibleEntity),
@@ -342,19 +402,75 @@ export default function ScenarioForm({ onSubmit }) {
     onSubmit(normalisedForm);
   };
 
+  const handleCompare = () => {
+    const newErrors = validate();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setShowErrorBanner(true);
+      const firstErrorKey = Object.keys(newErrors)[0];
+      const el = document.getElementById(`q-${firstErrorKey}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    const normalisedForm = {
+      ...form,
+      isResponsibleEntity: normalise(form.isResponsibleEntity),
+      isAPRARegulated: normalise(form.isAPRARegulated),
+      isASXListed: normalise(form.isASXListed),
+      isAFSLHolder: normalise(form.isAFSLHolder),
+      significantAvailabilityImpact: normalise(form.significantAvailabilityImpact),
+      relevantImpact: normalise(form.relevantImpact),
+      materialIncident: normalise(form.materialIncident),
+      controlWeaknessIdentified: normalise(form.controlWeaknessIdentified),
+      criticalOperationsDisrupted: normalise(form.criticalOperationsDisrupted),
+      materialToMarket: normalise(form.materialToMarket),
+      personalInformationInvolved: normalise(form.personalInformationInvolved),
+      unauthorisedAccessOrDisclosure: normalise(form.unauthorisedAccessOrDisclosure),
+      dataEncrypted: normalise(form.dataEncrypted),
+      vulnerableIndividuals: normalise(form.vulnerableIndividuals),
+      ransomPaidWithAssurances: normalise(form.ransomPaidWithAssurances),
+    };
+
+    onCompare(normalisedForm);
+  };
+
   const piRequired = form.personalInformationInvolved === true ||
     form.personalInformationInvolved === "unsure";
+
+  // Build banner text for comparison mode
+  const bannerText = () => {
+    if (!lockedSlot) return null;
+    const slot = lockingSlot === "B" ? "A" : "B";
+    const sector = lockedSlot.inputs?.sector
+      ? formatSector(lockedSlot.inputs.sector)
+      : lockedSlot.results?.scenario?.sector
+      ? formatSector(lockedSlot.results.scenario.sector)
+      : "Previous scenario";
+    const incident = lockedSlot.inputs?.incidentType
+      ? formatIncident(lockedSlot.inputs.incidentType)
+      : "";
+    return `Scenario ${slot === "B" ? "A" : "B"} locked - ${sector}${incident ? " / " + incident : ""}. Fill Scenario ${slot} below to compare.`;
+  };
 
   return (
     <div style={styles.container} ref={containerRef}>
       <h2 style={{ color: "#fff", fontSize: "22px", marginBottom: "6px" }}>
-        Incident Scenario Input
+        {isComparisonMode
+          ? `Scenario ${lockingSlot} - Incident Input`
+          : "Incident Scenario Input"}
       </h2>
-      <p style={{ color: "#556677", fontSize: "13px", marginBottom: "36px", lineHeight: "1.6" }}>
+      <p style={{ color: "#556677", fontSize: "13px", marginBottom: "24px", lineHeight: "1.6" }}>
         Answer each question based on your organisation and the incident. Each question
         includes a plain-English explanation. If you are unsure about an answer, select
         "I'm not sure" - the engine will handle it conservatively.
       </p>
+
+      {isComparisonMode && lockedSlot && (
+        <div style={styles.comparisonBanner}>
+          {bannerText()}
+        </div>
+      )}
 
       {showErrorBanner && (
         <div style={styles.errorBanner}>
@@ -670,12 +786,23 @@ export default function ScenarioForm({ onSubmit }) {
         )}
       </div>
 
-      <button
-        style={styles.submitBtn(true)}
-        onClick={handleSubmit}
-      >
-        Run Obligation Engine ->
-      </button>
+      {/* BUTTONS */}
+      {isComparisonMode ? (
+        <div style={styles.btnRow}>
+          <button style={styles.primaryBtn} onClick={handleSubmit}>
+            Run Obligation Tool ->
+          </button>
+        </div>
+      ) : (
+        <div style={styles.btnRow}>
+          <button style={styles.secondaryBtn} onClick={handleCompare}>
+            Add and Compare Another Scenario
+          </button>
+          <button style={styles.primaryBtn} onClick={handleSubmit}>
+            Run Obligation Tool ->
+          </button>
+        </div>
+      )}
     </div>
   );
 }

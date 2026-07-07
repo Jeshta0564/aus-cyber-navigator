@@ -4,6 +4,7 @@ import AboutPage from "./AboutPage";
 import { useState } from "react";
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/clerk-react";
 import ScenarioForm from "./ScenarioForm";
+import ComparisonResults from "./ComparisonResults";
 import ResultsPanel from "./ResultsPanel";
 import { runObligationEngine } from "./obligationEngine";
 
@@ -141,9 +142,25 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const { user } = useUser();
 
+  // ── Comparison state ──
+  const [comparisonMode, setComparisonMode] = useState(false);
+  const [slotA, setSlotA] = useState(null); // { results, narrative, inputs }
+  const [slotB, setSlotB] = useState(null); // { results, narrative, inputs }
+  const [lockingSlot, setLockingSlot] = useState(null); // "A" or "B" -- which slot is being replaced
+  const [comparisonId, setComparisonId] = useState(null);
+  const [hasComparedOnce, setHasComparedOnce] = useState(false);
+
+  // ── Generate UUID ──
+  function generateId() {
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+
+  // ── Single scenario submit ──
   async function handleFormSubmit(inputs) {
     setLoading(true);
-
     const engineResults = runObligationEngine(inputs);
 
     let generatedNarrative = "";
@@ -183,10 +200,120 @@ export default function App() {
     setView("results");
   }
 
+  // ── Comparison submit ──
+  async function handleComparisonSubmit(inputs) {
+    setLoading(true);
+    const engineResults = runObligationEngine(inputs);
+
+    let generatedNarrative = "";
+    try {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inputs, engineResults }),
+      });
+      const data = await response.json();
+      if (data.narrative) {
+        generatedNarrative = data.narrative;
+      }
+    } catch (err) {
+      generatedNarrative = "Narrative generation unavailable.";
+    }
+
+    const newSlot = { results: engineResults, narrative: generatedNarrative, inputs };
+    const sharedId = comparisonId || generateId();
+    setComparisonId(sharedId);
+
+    // Save both slots to Supabase with shared comparison_id
+    try {
+      const userId = user?.id || "anonymous";
+      if (lockingSlot === "B" || !hasComparedOnce) {
+        // Saving slot B
+        await supabase.from("scenarios").insert({
+          user_id: userId,
+          sector: inputs.sector,
+          incident_type: inputs.incidentType,
+          streams_triggered: engineResults.summary.totalStreamsTriggered,
+          most_urgent_deadline: engineResults.summary.mostUrgentDeadline?.deadline || null,
+          most_urgent_regulator: engineResults.summary.mostUrgentDeadline?.regulator || null,
+          narrative: generatedNarrative || null,
+          results: engineResults,
+          comparison_id: sharedId,
+        });
+      } else if (lockingSlot === "A") {
+        // Saving new slot A
+        await supabase.from("scenarios").insert({
+          user_id: userId,
+          sector: inputs.sector,
+          incident_type: inputs.incidentType,
+          streams_triggered: engineResults.summary.totalStreamsTriggered,
+          most_urgent_deadline: engineResults.summary.mostUrgentDeadline?.deadline || null,
+          most_urgent_regulator: engineResults.summary.mostUrgentDeadline?.regulator || null,
+          narrative: generatedNarrative || null,
+          results: engineResults,
+          comparison_id: sharedId,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to save comparison scenario:", err);
+    }
+
+    if (lockingSlot === "A") {
+      setSlotA(newSlot);
+    } else {
+      setSlotB(newSlot);
+    }
+
+    setHasComparedOnce(true);
+    setLoading(false);
+    setView("comparison");
+  }
+
+  // ── Start comparison from main form page ──
+  function handleStartComparison(inputs) {
+    const engineResults = runObligationEngine(inputs);
+    setSlotA({ results: engineResults, narrative: "", inputs });
+    setComparisonMode(true);
+    setLockingSlot("B");
+    setHasComparedOnce(false);
+    setComparisonId(generateId());
+    setView("comparison-form");
+  }
+
+  // ── Start comparison from results page ──
+  function handleCompareFromResults() {
+    setSlotA({ results, narrative, inputs: null });
+    setComparisonMode(true);
+    setLockingSlot("B");
+    setHasComparedOnce(false);
+    setComparisonId(generateId());
+    setView("comparison-form");
+  }
+
+  // ── Change slot A or B ──
+  function handleChangeSlot(slot) {
+    setLockingSlot(slot);
+    setView("comparison-form");
+  }
+
+  // ── Full reset ──
   function handleReset() {
     setView("form");
     setResults(null);
     setNarrative("");
+    setComparisonMode(false);
+    setSlotA(null);
+    setSlotB(null);
+    setLockingSlot(null);
+    setComparisonId(null);
+    setHasComparedOnce(false);
+  }
+
+  // ── Which slot is locked (for banner) ──
+  function getLockedSlot() {
+    if (lockingSlot === "B") return slotA;
+    if (lockingSlot === "A") return slotB;
+    return null;
   }
 
   return (
@@ -212,7 +339,7 @@ export default function App() {
           </p>
           <p style={{ fontSize: "11px", color: "#334455", marginTop: "24px" }}>
             Designed and built by{" "}
-            <a
+            
               href="https://www.linkedin.com/in/jeshta-rao-3491a6197"
               target="_blank"
               rel="noreferrer"
@@ -277,14 +404,42 @@ export default function App() {
           </div>
         </nav>
 
-        {view === "form" && <ScenarioForm onSubmit={handleFormSubmit} />}
+        {view === "form" && (
+          <ScenarioForm
+            onSubmit={handleFormSubmit}
+            onCompare={handleStartComparison}
+          />
+        )}
+
         {view === "results" && results && (
           <ResultsPanel
             results={results}
             narrative={narrative}
             onReset={handleReset}
+            onCompare={handleCompareFromResults}
           />
         )}
+
+        {view === "comparison-form" && (
+          <ScenarioForm
+            onSubmit={handleComparisonSubmit}
+            isComparisonMode={true}
+            lockedSlot={getLockedSlot()}
+            lockingSlot={lockingSlot}
+          />
+        )}
+
+        {view === "comparison" && slotA && slotB && (
+        <ComparisonResults
+          slotA={slotA}
+          slotB={slotB}
+          hasComparedOnce={hasComparedOnce}
+          onChangeA={() => handleChangeSlot("A")}
+          onChangeB={() => handleChangeSlot("B")}
+          onReset={handleReset}
+        />
+      )}
+
         {view === "history" && (
           <ScenarioHistory
             onBack={() => setView("form")}
@@ -295,6 +450,7 @@ export default function App() {
             }}
           />
         )}
+
         {view === "about" && (
           <AboutPage onBack={() => setView("form")} />
         )}

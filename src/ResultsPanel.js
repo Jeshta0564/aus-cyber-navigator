@@ -33,8 +33,10 @@ const s = {
   contentList: { margin: "6px 0 0 0", padding: "0 0 0 16px", fontSize: "12px", color: "#8899aa", lineHeight: "1.8" },
   reasoningBlock: { marginTop: "12px", padding: "12px", background: "#0f1923", borderRadius: "6px", borderLeft: "3px solid #2E75B6" },
   narrativeCard: { background: "#111e2d", border: "1px solid #2E75B6", borderRadius: "8px", padding: "24px", marginBottom: "24px" },
-  exportBtn: { padding: "12px 28px", background: "#1A6B3A", color: "#fff", border: "none", borderRadius: "6px", fontSize: "14px", fontWeight: "600", cursor: "pointer", marginRight: "12px" },
+  exportBtn: { padding: "12px 28px", background: "#1A6B3A", color: "#fff", border: "none", borderRadius: "6px", fontSize: "14px", fontWeight: "600", cursor: "pointer" },
+  compareBtn: { padding: "12px 28px", background: "#2E75B622", color: "#2E75B6", border: "1px solid #2E75B6", borderRadius: "6px", fontSize: "14px", fontWeight: "600", cursor: "pointer" },
   newBtn: { padding: "12px 28px", background: "transparent", color: "#8899aa", border: "1px solid #1e3a5f", borderRadius: "6px", fontSize: "14px", cursor: "pointer" },
+  btnRow: { display: "flex", gap: "12px", marginTop: "24px", paddingBottom: "48px", flexWrap: "wrap" },
   harmBadge: (level) => ({ display: "inline-block", padding: "3px 10px", borderRadius: "4px", fontSize: "11px", fontWeight: "700", background: level === "likely" ? "#8B1A1A22" : level === "borderline" ? "#7A4F0022" : "#1A6B3A22", border: `1px solid ${level === "likely" ? "#8B1A1A" : level === "borderline" ? "#7A4F00" : "#1A6B3A"}`, color: level === "likely" ? "#ff6b6b" : level === "borderline" ? "#ffaa44" : "#4dbb7a", marginLeft: "8px" }),
 };
 
@@ -72,7 +74,6 @@ async function downloadExcel(results, narrative) {
     return [LTBLUE, BLUE];
   }
 
-  // ── SHEET 1: DASHBOARD ──
   const ws1 = wb.addWorksheet("Dashboard");
   ws1.views = [{ showGridLines: false }];
   ws1.columns = [{width:2},{width:28},{width:22},{width:22},{width:22},{width:2}];
@@ -86,12 +87,11 @@ async function downloadExcel(results, narrative) {
 
   ws1.mergeCells("B3:E3"); ws1.getRow(3).height = 18;
   const sub = ws1.getCell("B3");
-  sub.value = `Jeshta Rao  |  RMIT University  |  Master of Cybersecurity  |  Generated: ${ts}`;
+  sub.value = `Jeshta Rao  |  GRC Analyst  |  ISO/IEC 27001 Lead Auditor  |  Generated: ${ts}`;
   sub.fill = fill(BLUE); sub.font = { italic:true, color:{argb:WHITE}, name:"Arial", size:9 };
   sub.alignment = { horizontal:"center", vertical:"middle" };
   ws1.getRow(4).height = 10;
 
-  // Metric cards
   [
     ["B","STREAMS TRIGGERED", `${results.summary.totalStreamsTriggered} of 4`, results.summary.totalStreamsTriggered > 0 ? RED : GREEN],
     ["C","MOST URGENT DEADLINE", results.summary.mostUrgentDeadline?.deadline || "None", RED],
@@ -116,7 +116,6 @@ async function downloadExcel(results, narrative) {
   ws1.mergeCells("B10:E10"); ws1.getRow(10).height = 16;
   cell(ws1,"B10","NOTIFICATION TIMELINE - ORDERED BY URGENCY",LTGRAY,MEDGRY,true,false,"left",8);
 
-  // Timeline header
   ws1.getRow(11).height = 20;
   ["B","C","D","E"].forEach((col, i) => {
     const labels = ["Obligation Stream","Regulator","Deadline","Status"];
@@ -166,7 +165,6 @@ async function downloadExcel(results, narrative) {
     for (let i=lastR+3; i<=lastR+9; i++) ws1.getRow(i).height = 16;
   }
 
-  // ── SHEET 2: OBLIGATION DETAIL ──
   const ws2 = wb.addWorksheet("Obligation Detail");
   ws2.views = [{ showGridLines: false }];
   ws2.columns = [{width:2},{width:26},{width:16},{width:18},{width:34},{width:28},{width:42},{width:2}];
@@ -217,7 +215,6 @@ async function downloadExcel(results, narrative) {
     }
   });
 
-  // ── SHEET 3: SERIOUS HARM ──
   const ndb = results.streams.ndb;
   if (ndb && ndb.seriousHarmAssessment) {
     const sha = ndb.seriousHarmAssessment;
@@ -269,7 +266,6 @@ async function downloadExcel(results, narrative) {
     cell(ws3,`B${nr}`,"OAIC POSITION: Attacker assurances following ransom payment do NOT reduce serious harm likelihood. This is OAIC confirmed regulatory position (H1 2024 report).",LTRED,RED,true,true);
   }
 
-  // ── SHEET 4: DISCLAIMER ──
   const ws4 = wb.addWorksheet("Disclaimer");
   ws4.views = [{ showGridLines: false }];
   ws4.columns = [{width:2},{width:80},{width:2}];
@@ -284,14 +280,13 @@ async function downloadExcel(results, narrative) {
     ["Scope Limitations","This tool covers primary federal notification obligations across the SOCI Act, APRA CPS 234, Privacy Act NDB Scheme, and Corporations Act. It does not cover all state-based obligations, sector-specific variations, or overseas obligations for multinational entities."],
     ["Serious Harm Assessment","The serious harm assessment under the NDB scheme involves subjective legal judgment. The engine applies OAIC guidance as at June 2026 but cannot replace legal advice on threshold determinations."],
     ["APRA Notifications","APRA requires direct communication through its Secure Stakeholder Portal. This tool maps the obligation but does not facilitate the notification itself."],
-   ].forEach(([title, text], i) => {
+  ].forEach(([title, text], i) => {
     const r = 4 + i*3;
     ws4.getRow(r).height = 18; ws4.getRow(r+1).height = 36; ws4.getRow(r+2).height = 6;
     cell(ws4,`B${r}`,title,LTBLUE,BLUE,true,false);
     cell(ws4,`B${r+1}`,text,OFFWHT,DKGRAY,false,true);
   });
 
-  // ── WRITE FILE ──
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   const url = URL.createObjectURL(blob);
@@ -370,7 +365,7 @@ function StreamCard({ stream }) {
   );
 }
 
-export default function ResultsPanel({ results, narrative, onReset }) {
+export default function ResultsPanel({ results, narrative, onReset, onCompare }) {
   const { summary, streams } = results;
   return (
     <div style={s.container}>
@@ -379,7 +374,6 @@ export default function ResultsPanel({ results, narrative, onReset }) {
           <h2 style={{ color: "#fff", fontSize: "22px", marginBottom: "4px" }}>Obligation Brief</h2>
           <p style={{ color: "#556677", fontSize: "12px" }}>Generated: {new Date(results.timestamp).toLocaleString("en-AU")}</p>
         </div>
-        <button style={s.newBtn} onClick={onReset}>- New Scenario</button>
       </div>
 
       <div style={s.summaryGrid}>
@@ -433,11 +427,18 @@ export default function ResultsPanel({ results, narrative, onReset }) {
         <strong style={{ color: "#8899aa" }}>Disclaimer:</strong> This tool provides decision support only and does not constitute legal advice. Regulatory obligations reflect the Australian position as at June 2026 and may change. Organisations must seek legal counsel before making final notification decisions. This tool does not cover all state-based obligations or sector-specific variations.
       </div>
 
-      <div style={{ marginTop: "24px", paddingBottom: "48px" }}>
+      <div style={s.btnRow}>
         <button style={s.exportBtn} onClick={() => downloadExcel(results, narrative)}>
           Download Excel Report
         </button>
-        <button style={s.newBtn} onClick={onReset}>Run Another Scenario</button>
+        {onCompare && (
+          <button style={s.compareBtn} onClick={onCompare}>
+            Add and Compare Another Scenario
+          </button>
+        )}
+        <button style={s.newBtn} onClick={onReset}>
+          Run New Scenario
+        </button>
       </div>
     </div>
   );
