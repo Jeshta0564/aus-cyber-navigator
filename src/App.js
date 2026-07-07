@@ -339,7 +339,7 @@ export default function App() {
           </p>
           <p style={{ fontSize: "11px", color: "#334455", marginTop: "24px" }}>
             Designed and built by{" "}
-            
+            <a
               href="https://www.linkedin.com/in/jeshta-rao-3491a6197"
               target="_blank"
               rel="noreferrer"
