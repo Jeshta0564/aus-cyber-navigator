@@ -226,7 +226,7 @@ export default function App() {
     // Save both slots to Supabase with shared comparison_id
     try {
       const userId = user?.id || "anonymous";
-      if (lockingSlot === "B" || (!hasComparedOnce)) {
+      if ((lockingSlot === "B") || (!hasComparedOnce)) {
         // Saving slot B
         await supabase.from("scenarios").insert({
           user_id: userId,

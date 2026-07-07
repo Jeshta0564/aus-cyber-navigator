@@ -312,7 +312,6 @@ async function downloadComparisonExcel(slotA, slotB) {
     const sA = slotA.results.streams[stream.key];
     const sB = slotB.results.streams[stream.key];
     const isDiff = sA.applicable !== sB.applicable || sA.deadline !== sB.deadline;
-    const rowBg = i % 2 === 0 ? OFFWHT : WHITE;
 
     ws1.getRow(r).height = 22;
     cell(ws1,`B${r}`,stream.label,isDiff ? "FFFFF3D6" : LTGRAY, isDiff ? AMBER : MEDGRY,true,false,"left",9);
