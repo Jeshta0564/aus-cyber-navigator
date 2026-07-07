@@ -272,7 +272,6 @@ export default function App() {
   function handleStartComparison(inputs) {
     const engineResults = runObligationEngine(inputs);
     setSlotA({ results: engineResults, narrative: "", inputs });
-    setComparisonMode(true);
     setLockingSlot("B");
     setHasComparedOnce(false);
     setComparisonId(generateId());
@@ -282,7 +281,6 @@ export default function App() {
   // ── Start comparison from results page ──
   function handleCompareFromResults() {
     setSlotA({ results, narrative, inputs: null });
-    setComparisonMode(true);
     setLockingSlot("B");
     setHasComparedOnce(false);
     setComparisonId(generateId());
@@ -300,7 +298,6 @@ export default function App() {
     setView("form");
     setResults(null);
     setNarrative("");
-    setComparisonMode(false);
     setSlotA(null);
     setSlotB(null);
     setLockingSlot(null);
