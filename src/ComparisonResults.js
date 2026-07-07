@@ -217,7 +217,6 @@ async function downloadComparisonExcel(slotA, slotB) {
   const DKGRAY= "FF2B2B2B"; const MEDGRY= "FF888888"; const RED   = "FF8B1A1A";
   const LTRED = "FFFAE0E0"; const AMBER = "FF7A4F00"; const LTAMB = "FFFFF3D6";
   const GREEN = "FF1A6B3A"; const LTGRN = "FFD6EFE1";
-  const AMBER2= "FFFF8C00";
 
   const fill = (hex) => ({ type: "pattern", pattern: "solid", fgColor: { argb: hex } });
   const bdr = () => { const t = { style: "thin", color: { argb: "FFCCCCCC" } }; return { top:t, bottom:t, left:t, right:t }; };
@@ -314,7 +313,6 @@ async function downloadComparisonExcel(slotA, slotB) {
     const sB = slotB.results.streams[stream.key];
     const isDiff = sA.applicable !== sB.applicable || sA.deadline !== sB.deadline;
     const rowBg = i % 2 === 0 ? OFFWHT : WHITE;
-    const highlightBg = isDiff ? "FFFFF3D6" : rowBg;
 
     ws1.getRow(r).height = 22;
     cell(ws1,`B${r}`,stream.label,isDiff ? "FFFFF3D6" : LTGRAY, isDiff ? AMBER : MEDGRY,true,false,"left",9);

@@ -143,7 +143,6 @@ export default function App() {
   const { user } = useUser();
 
   // ── Comparison state ──
-  const [comparisonMode, setComparisonMode] = useState(false);
   const [slotA, setSlotA] = useState(null); // { results, narrative, inputs }
   const [slotB, setSlotB] = useState(null); // { results, narrative, inputs }
   const [lockingSlot, setLockingSlot] = useState(null); // "A" or "B" -- which slot is being replaced
@@ -227,7 +226,7 @@ export default function App() {
     // Save both slots to Supabase with shared comparison_id
     try {
       const userId = user?.id || "anonymous";
-      if (lockingSlot === "B" || !hasComparedOnce) {
+      if (lockingSlot === "B" || (!hasComparedOnce)) {
         // Saving slot B
         await supabase.from("scenarios").insert({
           user_id: userId,
