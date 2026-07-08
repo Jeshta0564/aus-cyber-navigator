@@ -269,12 +269,30 @@ export default function App() {
   }
 
   // ── Start comparison from main form page ──
-  function handleStartComparison(inputs) {
+  async function handleStartComparison(inputs) {
+    setLoading(true);
     const engineResults = runObligationEngine(inputs);
-    setSlotA({ results: engineResults, narrative: "", inputs });
+
+    let generatedNarrative = "";
+    try {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inputs, engineResults }),
+      });
+      const data = await response.json();
+      if (data.narrative) {
+        generatedNarrative = data.narrative;
+      }
+    } catch (err) {
+      generatedNarrative = "Narrative generation unavailable.";
+    }
+
+    setSlotA({ results: engineResults, narrative: generatedNarrative, inputs });
     setLockingSlot("B");
     setHasComparedOnce(false);
     setComparisonId(generateId());
+    setLoading(false);
     setView("comparison-form");
   }
 

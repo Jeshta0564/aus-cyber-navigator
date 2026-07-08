@@ -441,16 +441,15 @@ export default function ScenarioForm({
   // Build banner text for comparison mode
   const bannerText = () => {
     if (!lockedSlot) return null;
-    const slot = lockingSlot === "B" ? "A" : "B";
+    const lockedLabel = lockingSlot === "B" ? "A" : "B";
+    const fillingLabel = lockingSlot;
     const sector = lockedSlot.inputs?.sector
       ? formatSector(lockedSlot.inputs.sector)
-      : lockedSlot.results?.scenario?.sector
-      ? formatSector(lockedSlot.results.scenario.sector)
       : "Previous scenario";
     const incident = lockedSlot.inputs?.incidentType
       ? formatIncident(lockedSlot.inputs.incidentType)
       : "";
-    return `Scenario ${slot === "B" ? "A" : "B"} locked - ${sector}${incident ? " / " + incident : ""}. Fill Scenario ${slot} below to compare.`;
+    return `Scenario ${lockedLabel} locked - ${sector}${incident ? " / " + incident : ""}. Fill Scenario ${fillingLabel} below to compare.`;
   };
 
   return (
