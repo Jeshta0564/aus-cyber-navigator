@@ -40,260 +40,14 @@ const s = {
   harmBadge: (level) => ({ display: "inline-block", padding: "3px 10px", borderRadius: "4px", fontSize: "11px", fontWeight: "700", background: level === "likely" ? "#8B1A1A22" : level === "borderline" ? "#7A4F0022" : "#1A6B3A22", border: `1px solid ${level === "likely" ? "#8B1A1A" : level === "borderline" ? "#7A4F00" : "#1A6B3A"}`, color: level === "likely" ? "#ff6b6b" : level === "borderline" ? "#ffaa44" : "#4dbb7a", marginLeft: "8px" }),
 };
 
-async function downloadExcel(results, narrative) {
-  const ExcelJS = (await import("exceljs")).default;
-  const wb = new ExcelJS.Workbook();
-  wb.creator = "AUS Cyber Incident Obligation Navigator";
-  wb.created = new Date();
-  const ts = new Date(results.timestamp).toLocaleString("en-AU");
-
-  const NAVY  = "FF1B3A6B"; const BLUE  = "FF2E75B6"; const LTBLUE = "FFD6E4F0";
-  const WHITE = "FFFFFFFF"; const OFFWHT= "FFF7F9FC"; const LTGRAY = "FFF0F0F0";
-  const DKGRAY= "FF2B2B2B"; const MEDGRY= "FF888888"; const RED   = "FF8B1A1A";
-  const LTRED = "FFFAE0E0"; const AMBER = "FF7A4F00"; const LTAMB = "FFFFF3D6";
-  const GREEN = "FF1A6B3A"; const LTGRN = "FFD6EFE1";
-
-  const fill = (hex) => ({ type: "pattern", pattern: "solid", fgColor: { argb: hex } });
-  const bdr = () => { const t = { style: "thin", color: { argb: "FFCCCCCC" } }; return { top:t, bottom:t, left:t, right:t }; };
-  const thickBdr = (a) => { const t = { style: "medium", color: { argb: a } }; return { top:t, bottom:t, left:t, right:t }; };
-
-  function cell(ws, addr, val, fillC, fontC=DKGRAY, bold=false, wrap=true, align="left", size=9) {
-    const c = ws.getCell(addr);
-    c.value = val; c.fill = fill(fillC);
-    c.font = { bold, color:{ argb: fontC }, name:"Arial", size };
-    c.alignment = { horizontal: align, vertical:"middle", wrapText: wrap };
-    c.border = bdr();
-    return c;
+const printStyles = `
+  @media print {
+    body { background: #0f1923 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    nav { display: none !important; }
+    .no-print { display: none !important; }
+    .print-container { max-width: 100% !important; padding: 20px !important; }
   }
-
-  function dlColors(deadline) {
-    if (!deadline) return [LTGRAY, MEDGRY];
-    const d = deadline.toUpperCase();
-    if (d.includes("12 HOUR") || d==="IMMEDIATELY" || d==="IMMEDIATE") return [LTRED, RED];
-    if (d.includes("72 HOUR") || d.includes("10 BUSINESS")) return [LTAMB, AMBER];
-    return [LTBLUE, BLUE];
-  }
-
-  const ws1 = wb.addWorksheet("Dashboard");
-  ws1.views = [{ showGridLines: false }];
-  ws1.columns = [{width:2},{width:28},{width:22},{width:22},{width:22},{width:2}];
-
-  ws1.mergeCells("B1:E1"); ws1.getRow(1).height = 8;
-  ws1.mergeCells("B2:E2"); ws1.getRow(2).height = 38;
-  const t = ws1.getCell("B2");
-  t.value = "AUSTRALIAN CYBER INCIDENT OBLIGATION NAVIGATOR";
-  t.fill = fill(NAVY); t.font = { bold:true, color:{argb:WHITE}, name:"Arial", size:16 };
-  t.alignment = { horizontal:"center", vertical:"middle" }; t.border = thickBdr(NAVY);
-
-  ws1.mergeCells("B3:E3"); ws1.getRow(3).height = 18;
-  const sub = ws1.getCell("B3");
-  sub.value = `Jeshta Rao  |  GRC Analyst  |  ISO/IEC 27001 Lead Auditor  |  Generated: ${ts}`;
-  sub.fill = fill(BLUE); sub.font = { italic:true, color:{argb:WHITE}, name:"Arial", size:9 };
-  sub.alignment = { horizontal:"center", vertical:"middle" };
-  ws1.getRow(4).height = 10;
-
-  [
-    ["B","STREAMS TRIGGERED", `${results.summary.totalStreamsTriggered} of 4`, results.summary.totalStreamsTriggered > 0 ? RED : GREEN],
-    ["C","MOST URGENT DEADLINE", results.summary.mostUrgentDeadline?.deadline || "None", RED],
-    ["D","LEAD REGULATOR", results.summary.mostUrgentDeadline?.regulator || "N/A", BLUE],
-    ["E","STREAMS NOT TRIGGERED", `${4 - results.summary.totalStreamsTriggered} of 4`, MEDGRY],
-  ].forEach(([col, label, val, vc]) => {
-    ws1.mergeCells(`${col}5:${col}6`);
-    const lc = ws1.getCell(`${col}5`);
-    lc.value = label; lc.fill = fill(LTBLUE);
-    lc.font = { bold:true, color:{argb:BLUE}, name:"Arial", size:8 };
-    lc.alignment = { horizontal:"left", vertical:"top", wrapText:true }; lc.border = bdr();
-    ws1.getRow(5).height = 14; ws1.getRow(6).height = 6;
-    ws1.mergeCells(`${col}7:${col}8`);
-    const mc = ws1.getCell(`${col}7`);
-    mc.value = val; mc.fill = fill(OFFWHT);
-    mc.font = { bold:true, color:{argb:vc}, name:"Arial", size:13 };
-    mc.alignment = { horizontal:"center", vertical:"middle" }; mc.border = thickBdr(vc);
-    ws1.getRow(7).height = 28; ws1.getRow(8).height = 8;
-  });
-
-  ws1.getRow(9).height = 10;
-  ws1.mergeCells("B10:E10"); ws1.getRow(10).height = 16;
-  cell(ws1,"B10","NOTIFICATION TIMELINE - ORDERED BY URGENCY",LTGRAY,MEDGRY,true,false,"left",8);
-
-  ws1.getRow(11).height = 20;
-  ["B","C","D","E"].forEach((col, i) => {
-    const labels = ["Obligation Stream","Regulator","Deadline","Status"];
-    const c = ws1.getCell(`${col}11`);
-    c.value = labels[i]; c.fill = fill(NAVY);
-    c.font = { bold:true, color:{argb:WHITE}, name:"Arial", size:10 };
-    c.alignment = { horizontal:"center", vertical:"middle" }; c.border = bdr();
-  });
-
-  results.summary.deadlinesByUrgency.forEach((d, i) => {
-    const r = 12 + i; ws1.getRow(r).height = 18;
-    const bg = i%2===0 ? OFFWHT : WHITE;
-    const [df, dfont] = dlColors(d.deadline);
-    cell(ws1,`B${r}`,d.stream,LTBLUE,NAVY,true);
-    cell(ws1,`C${r}`,d.regulator,bg,DKGRAY);
-    cell(ws1,`D${r}`,d.deadline,df,dfont,true,false,"center");
-    cell(ws1,`E${r}`,"ACTIVE",LTGRN,GREEN,true,false,"center");
-  });
-
-  const allStreams = [
-    {name:"SOCI Act",reg:"ASD (ACSC)"},{name:"APRA CPS 234",reg:"APRA"},
-    {name:"Privacy Act - NDB Scheme",reg:"OAIC"},{name:"Corporations Act",reg:"ASIC / ASX"},
-  ];
-  const triggered = results.summary.activeStreamNames;
-  allStreams.filter(st => !triggered.some(n => n.includes(st.name.split(" ")[0]))).forEach((st,i) => {
-    const r = 12 + results.summary.deadlinesByUrgency.length + i;
-    ws1.getRow(r).height = 18;
-    cell(ws1,`B${r}`,st.name,LTGRAY,MEDGRY);
-    cell(ws1,`C${r}`,st.reg,LTGRAY,MEDGRY);
-    cell(ws1,`D${r}`,"N/A",LTGRAY,MEDGRY,false,false,"center");
-    cell(ws1,`E${r}`,"NOT TRIGGERED",LTRED,RED,true,false,"center");
-  });
-
-  const lastR = 12 + results.summary.deadlinesByUrgency.length +
-    allStreams.filter(st => !triggered.some(n => n.includes(st.name.split(" ")[0]))).length;
-  ws1.getRow(lastR+1).height = 10;
-
-  if (narrative) {
-    ws1.mergeCells(`B${lastR+2}:E${lastR+2}`); ws1.getRow(lastR+2).height = 16;
-    cell(ws1,`B${lastR+2}`,"PLAIN-ENGLISH SUMMARY - GENERATED BY CLAUDE",LTBLUE,BLUE,true,false,"left",8);
-    ws1.mergeCells(`B${lastR+3}:E${lastR+9}`);
-    const nc = ws1.getCell(`B${lastR+3}`);
-    nc.value = narrative; nc.fill = fill(OFFWHT);
-    nc.font = { color:{argb:DKGRAY}, name:"Arial", size:9 };
-    nc.alignment = { horizontal:"left", vertical:"top", wrapText:true };
-    nc.border = thickBdr(BLUE);
-    for (let i=lastR+3; i<=lastR+9; i++) ws1.getRow(i).height = 16;
-  }
-
-  const ws2 = wb.addWorksheet("Obligation Detail");
-  ws2.views = [{ showGridLines: false }];
-  ws2.columns = [{width:2},{width:26},{width:16},{width:18},{width:34},{width:28},{width:42},{width:2}];
-
-  ws2.mergeCells("B1:G1"); ws2.getRow(1).height = 8;
-  ws2.mergeCells("B2:G2"); ws2.getRow(2).height = 30;
-  const d2t = ws2.getCell("B2");
-  d2t.value = "DETAILED OBLIGATION BREAKDOWN"; d2t.fill = fill(NAVY);
-  d2t.font = { bold:true, color:{argb:WHITE}, name:"Arial", size:13 };
-  d2t.alignment = { horizontal:"center", vertical:"middle" }; d2t.border = thickBdr(NAVY);
-  ws2.getRow(3).height = 10;
-
-  ws2.getRow(4).height = 22;
-  ["B","C","D","E","F","G"].forEach((col,i) => {
-    const labels = ["Stream","Status","Deadline","Action Required","Method","Content Required"];
-    const c = ws2.getCell(`${col}4`);
-    c.value = labels[i]; c.fill = fill(NAVY);
-    c.font = { bold:true, color:{argb:WHITE}, name:"Arial", size:10 };
-    c.alignment = { horizontal:"center", vertical:"middle" }; c.border = bdr();
-  });
-
-  let dr = 5;
-  Object.values(results.streams).forEach(stream => {
-    const [sf, sfont] = stream.applicable ? [LTGRN,GREEN] : [LTRED,RED];
-    const [df, dfont] = dlColors(stream.deadline);
-    if (stream.obligations && stream.obligations.length > 0) {
-      stream.obligations.forEach((ob,oi) => {
-        const bg = oi%2===0 ? OFFWHT : WHITE;
-        const isWarn = ob.action.includes("WARNING")||ob.action.includes("CRITICAL")||ob.action.includes("REMINDER");
-        ws2.getRow(dr).height = 48;
-        cell(ws2,`B${dr}`,stream.stream,LTBLUE,NAVY,true);
-        cell(ws2,`C${dr}`,stream.applicable?"TRIGGERED":"NOT TRIGGERED",sf,sfont,true,false,"center");
-        cell(ws2,`D${dr}`,stream.deadline||"N/A",df,dfont,true,false,"center");
-        cell(ws2,`E${dr}`,ob.action,isWarn?LTRED:bg,isWarn?RED:DKGRAY,isWarn);
-        cell(ws2,`F${dr}`,ob.method,bg,DKGRAY);
-        cell(ws2,`G${dr}`,ob.content?ob.content.join("\n- "):"",bg,DKGRAY);
-        dr++;
-      });
-    } else {
-      ws2.getRow(dr).height = 28;
-      cell(ws2,`B${dr}`,stream.stream,LTGRAY,MEDGRY);
-      cell(ws2,`C${dr}`,"NOT TRIGGERED",LTRED,RED,true,false,"center");
-      cell(ws2,`D${dr}`,"N/A",LTGRAY,MEDGRY,false,false,"center");
-      cell(ws2,`E${dr}`,stream.reasoning?stream.reasoning.join(" "):"",LTGRAY,MEDGRY,false,true);
-      cell(ws2,`F${dr}`,"",LTGRAY,MEDGRY);
-      cell(ws2,`G${dr}`,"",LTGRAY,MEDGRY);
-      dr++;
-    }
-  });
-
-  const ndb = results.streams.ndb;
-  if (ndb && ndb.seriousHarmAssessment) {
-    const sha = ndb.seriousHarmAssessment;
-    const ws3 = wb.addWorksheet("Serious Harm Assessment");
-    ws3.views = [{ showGridLines: false }];
-    ws3.columns = [{width:2},{width:30},{width:52},{width:2}];
-
-    ws3.mergeCells("B1:C1"); ws3.getRow(1).height = 8;
-    ws3.mergeCells("B2:C2"); ws3.getRow(2).height = 30;
-    const s3t = ws3.getCell("B2");
-    s3t.value = "SERIOUS HARM ASSESSMENT - NDB SCHEME (CONDITION 3)";
-    s3t.fill = fill(NAVY); s3t.font = { bold:true, color:{argb:WHITE}, name:"Arial", size:13 };
-    s3t.alignment = { horizontal:"center", vertical:"middle" }; s3t.border = thickBdr(NAVY);
-    ws3.getRow(3).height = 10;
-
-    const detF = sha.likely ? LTRED : sha.borderline ? LTAMB : LTGRN;
-    const detFt = sha.likely ? RED : sha.borderline ? AMBER : GREEN;
-    const det = sha.likely
-      ? "SERIOUS HARM LIKELY - Eligible Data Breach confirmed. Notify OAIC and affected individuals."
-      : sha.borderline
-      ? "BORDERLINE - Seek legal advice before making notification decision."
-      : "SERIOUS HARM NOT LIKELY - Document your assessment and retain records.";
-
-    ws3.mergeCells("B4:C4"); ws3.getRow(4).height = 20;
-    cell(ws3,"B4","DETERMINATION",BLUE,WHITE,true,false,"center",10);
-    ws3.mergeCells("B5:C5"); ws3.getRow(5).height = 36;
-    cell(ws3,"B5",det,detF,detFt,true,true,"center");
-    ws3.mergeCells("B6:C6"); ws3.getRow(6).height = 20;
-    cell(ws3,"B6",`Risk Score: ${sha.score}   (6+ = Likely  |  3-5 = Borderline  |  0-2 = Not Likely)`,OFFWHT,MEDGRY,false,false,"center");
-    ws3.getRow(7).height = 10;
-
-    ws3.getRow(8).height = 22;
-    ["B","C"].forEach((col,i) => {
-      const c = ws3.getCell(`${col}8`);
-      c.value = ["Factor Assessed","Detail"][i]; c.fill = fill(NAVY);
-      c.font = { bold:true, color:{argb:WHITE}, name:"Arial", size:10 };
-      c.alignment = { horizontal:"center", vertical:"middle" }; c.border = bdr();
-    });
-
-    sha.factors.forEach((factor, i) => {
-      const r = 9+i; const bg = i%2===0 ? OFFWHT : WHITE;
-      const hi = factor.toLowerCase().includes("high")||factor.toLowerCase().includes("critical");
-      ws3.getRow(r).height = 22;
-      cell(ws3,`B${r}`,`Factor ${i+1}`,hi?LTRED:bg,hi?RED:MEDGRY,true,false,"center");
-      cell(ws3,`C${r}`,factor,bg,DKGRAY);
-    });
-
-    const nr = 9+sha.factors.length+1; ws3.mergeCells(`B${nr}:C${nr}`); ws3.getRow(nr).height = 40;
-    cell(ws3,`B${nr}`,"OAIC POSITION: Attacker assurances following ransom payment do NOT reduce serious harm likelihood. This is OAIC confirmed regulatory position (H1 2024 report).",LTRED,RED,true,true);
-  }
-
-  const ws4 = wb.addWorksheet("Disclaimer");
-  ws4.views = [{ showGridLines: false }];
-  ws4.columns = [{width:2},{width:80},{width:2}];
-
-  ws4.mergeCells("B1:B1"); ws4.getRow(1).height = 8;
-  ws4.getRow(2).height = 28; cell(ws4,"B2","DISCLAIMER AND LIMITATIONS",NAVY,WHITE,true,false,"center",13);
-  ws4.getRow(3).height = 10;
-
-  [
-    ["Decision Support Only","This tool provides decision support and does not constitute legal advice. Organisations must engage qualified legal counsel before making any regulatory notification decisions."],
-    ["Currency of Information","Regulatory obligations reflect the Australian position as at June 2026. Australian cyber legislation and APRA prudential standards are subject to amendment. This tool does not update automatically."],
-    ["Scope Limitations","This tool covers primary federal notification obligations across the SOCI Act, APRA CPS 234, Privacy Act NDB Scheme, and Corporations Act. It does not cover all state-based obligations, sector-specific variations, or overseas obligations for multinational entities."],
-    ["Serious Harm Assessment","The serious harm assessment under the NDB scheme involves subjective legal judgment. The engine applies OAIC guidance as at June 2026 but cannot replace legal advice on threshold determinations."],
-    ["APRA Notifications","APRA requires direct communication through its Secure Stakeholder Portal. This tool maps the obligation but does not facilitate the notification itself."],
-  ].forEach(([title, text], i) => {
-    const r = 4 + i*3;
-    ws4.getRow(r).height = 18; ws4.getRow(r+1).height = 36; ws4.getRow(r+2).height = 6;
-    cell(ws4,`B${r}`,title,LTBLUE,BLUE,true,false);
-    cell(ws4,`B${r+1}`,text,OFFWHT,DKGRAY,false,true);
-  });
-
-  const buffer = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = "AUS_Cyber_Obligation_Brief.xlsx";
-  a.click(); URL.revokeObjectURL(url);
-}
+`;
 
 function ObligationBlock({ obligation }) {
   const isWarning = obligation.action.includes("WARNING") ||
@@ -367,12 +121,22 @@ function StreamCard({ stream }) {
 
 export default function ResultsPanel({ results, narrative, onReset, onCompare }) {
   const { summary, streams } = results;
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
-    <div style={s.container}>
+    <div style={s.container} className="print-container">
+      <style>{printStyles}</style>
+
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px" }}>
         <div>
           <h2 style={{ color: "#fff", fontSize: "22px", marginBottom: "4px" }}>Obligation Brief</h2>
           <p style={{ color: "#556677", fontSize: "12px" }}>Generated: {new Date(results.timestamp).toLocaleString("en-AU")}</p>
+          <p style={{ color: "#334455", fontSize: "11px", marginTop: "2px" }}>
+            Designed and built by Jeshta Rao - GRC Analyst - ISO/IEC 27001 Lead Auditor
+          </p>
         </div>
       </div>
 
@@ -427,9 +191,9 @@ export default function ResultsPanel({ results, narrative, onReset, onCompare })
         <strong style={{ color: "#8899aa" }}>Disclaimer:</strong> This tool provides decision support only and does not constitute legal advice. Regulatory obligations reflect the Australian position as at June 2026 and may change. Organisations must seek legal counsel before making final notification decisions. This tool does not cover all state-based obligations or sector-specific variations.
       </div>
 
-      <div style={s.btnRow}>
-        <button style={s.exportBtn} onClick={() => downloadExcel(results, narrative)}>
-          Download Excel Report
+      <div style={s.btnRow} className="no-print">
+        <button style={s.exportBtn} onClick={handlePrint}>
+          Download as PDF
         </button>
         {onCompare && (
           <button style={s.compareBtn} onClick={onCompare}>
