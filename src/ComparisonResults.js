@@ -361,27 +361,63 @@ async function downloadComparisonExcel(slotA, slotB) {
     ncB.border = bdr();
   }
 
-  // ── SHEET 2: SCENARIO A DETAIL ──
-  const ws2 = wb.addWorksheet("Scenario A - Detail");
-  ws2.views = [{ showGridLines: false }];
-  ws2.columns = [{width:2},{width:26},{width:16},{width:18},{width:34},{width:28},{width:42},{width:2}];
-  ws2.mergeCells("B1:G1"); ws2.getRow(1).height = 8;
-  ws2.mergeCells("B2:G2"); ws2.getRow(2).height = 30;
-  const a2t = ws2.getCell("B2");
-  a2t.value = `SCENARIO A - ${sectorA}`;
-  a2t.fill = fill(NAVY); a2t.font = { bold:true, color:{argb:WHITE}, name:"Arial", size:13 };
-  a2t.alignment = { horizontal:"center", vertical:"middle" }; a2t.border = thickBdr(NAVY);
+// ── Helper to build obligation detail sheet ──
+  function buildDetailSheet(wb, sheetName, title, slotData) {
+    const ws = wb.addWorksheet(sheetName);
+    ws.views = [{ showGridLines: false }];
+    ws.columns = [{width:2},{width:26},{width:16},{width:18},{width:34},{width:28},{width:42},{width:2}];
 
-  // ── SHEET 3: SCENARIO B DETAIL ──
-  const ws3 = wb.addWorksheet("Scenario B - Detail");
-  ws3.views = [{ showGridLines: false }];
-  ws3.columns = [{width:2},{width:26},{width:16},{width:18},{width:34},{width:28},{width:42},{width:2}];
-  ws3.mergeCells("B1:G1"); ws3.getRow(1).height = 8;
-  ws3.mergeCells("B2:G2"); ws3.getRow(2).height = 30;
-  const b2t = ws3.getCell("B2");
-  b2t.value = `SCENARIO B - ${sectorB}`;
-  b2t.fill = fill(NAVY); b2t.font = { bold:true, color:{argb:WHITE}, name:"Arial", size:13 };
-  b2t.alignment = { horizontal:"center", vertical:"middle" }; b2t.border = thickBdr(NAVY);
+    ws.mergeCells("B1:G1"); ws.getRow(1).height = 8;
+    ws.mergeCells("B2:G2"); ws.getRow(2).height = 30;
+    const titleCell = ws.getCell("B2");
+    titleCell.value = title;
+    titleCell.fill = fill(NAVY);
+    titleCell.font = { bold:true, color:{argb:WHITE}, name:"Arial", size:13 };
+    titleCell.alignment = { horizontal:"center", vertical:"middle" };
+    titleCell.border = thickBdr(NAVY);
+    ws.getRow(3).height = 10;
+
+    ws.getRow(4).height = 22;
+    ["B","C","D","E","F","G"].forEach((col, i) => {
+      const labels = ["Stream","Status","Deadline","Action Required","Method","Content Required"];
+      const c = ws.getCell(`${col}4`);
+      c.value = labels[i]; c.fill = fill(NAVY);
+      c.font = { bold:true, color:{argb:WHITE}, name:"Arial", size:10 };
+      c.alignment = { horizontal:"center", vertical:"middle" }; c.border = bdr();
+    });
+
+    let dr = 5;
+    Object.values(slotData.results.streams).forEach(stream => {
+      const [sf, sfont] = stream.applicable ? [LTGRN, GREEN] : [LTRED, RED];
+      const [df, dfont] = dlFill(stream.deadline);
+      if (stream.obligations && stream.obligations.length > 0) {
+        stream.obligations.forEach((ob, oi) => {
+          const bg = oi % 2 === 0 ? OFFWHT : WHITE;
+          const isWarn = ob.action.includes("WARNING") || ob.action.includes("CRITICAL") || ob.action.includes("REMINDER");
+          ws.getRow(dr).height = 48;
+          cell(ws,`B${dr}`,stream.stream,LTBLUE,NAVY,true);
+          cell(ws,`C${dr}`,stream.applicable?"TRIGGERED":"NOT TRIGGERED",sf,sfont,true,false,"center");
+          cell(ws,`D${dr}`,stream.deadline||"N/A",df,dfont,true,false,"center");
+          cell(ws,`E${dr}`,ob.action,isWarn?LTRED:bg,isWarn?RED:DKGRAY,isWarn);
+          cell(ws,`F${dr}`,ob.method,bg,DKGRAY);
+          cell(ws,`G${dr}`,ob.content?ob.content.join("\n- "):"",bg,DKGRAY);
+          dr++;
+        });
+      } else {
+        ws.getRow(dr).height = 28;
+        cell(ws,`B${dr}`,stream.stream,LTGRAY,MEDGRY);
+        cell(ws,`C${dr}`,"NOT TRIGGERED",LTRED,RED,true,false,"center");
+        cell(ws,`D${dr}`,"N/A",LTGRAY,MEDGRY,false,false,"center");
+        cell(ws,`E${dr}`,stream.reasoning?stream.reasoning.join(" "):"",LTGRAY,MEDGRY,false,true);
+        cell(ws,`F${dr}`,"",LTGRAY,MEDGRY);
+        cell(ws,`G${dr}`,"",LTGRAY,MEDGRY);
+        dr++;
+      }
+    });
+  }
+
+  buildDetailSheet(wb, "Scenario A - Detail", `SCENARIO A - ${sectorA}`, slotA);
+  buildDetailSheet(wb, "Scenario B - Detail", `SCENARIO B - ${sectorB}`, slotB);
 
   // ── WRITE FILE ──
   const buffer = await wb.xlsx.writeBuffer();
