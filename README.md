@@ -1,70 +1,89 @@
-# Getting Started with Create React App
+# Australian Cyber Incident Obligation Navigator
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A rules-based decision support tool that maps Australian regulatory notification obligations triggered by a cyber incident — across four frameworks simultaneously, ordered by urgency.
 
-## Available Scripts
+Live at [aus-cyber-navigator.vercel.app](https://aus-cyber-navigator.vercel.app)
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## What it does
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+When a cyber incident occurs, an Australian organisation may face notification obligations under multiple regulatory frameworks at the same time — each with different triggers, different regulators, and different deadlines. Figuring out which obligations apply to a specific scenario, quickly and under pressure, is harder than it sounds.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+This tool takes a described incident scenario as input and runs it through a decision engine that determines every notification obligation that applies — ordered by urgency. It covers four Australian obligation streams:
 
-### `npm test`
+- **SOCI Act 2018** — 12-hour and 72-hour mandatory reporting to ASD (ACSC) for cyber incidents affecting critical infrastructure assets
+- **APRA CPS 234** — 72-hour material incident notification and 10 business day control weakness notification for APRA-regulated entities
+- **Privacy Act 1988 — NDB Scheme** — Eligible data breach notification to the OAIC and affected individuals, including a structured serious harm assessment
+- **Corporations Act 2001 — Continuous Disclosure** — Immediate market disclosure obligations for ASX-listed entities and AFSL holders
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+---
 
-### `npm run build`
+## How the engine works
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+The decision engine is entirely rules-based. Each obligation stream is assessed through encoded if/then logic built directly from primary regulatory sources — the actual legislation, prudential standards, and regulator guidance documents.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Claude API is used only to generate a plain-English summary paragraph after the engine has determined the obligations. The regulatory determinations themselves involve no AI.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+This separation is deliberate. Regulatory decisions need to be auditable and defensible. The engine logic can be inspected, tested, and updated independently of any AI component.
 
-### `npm run eject`
+---
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Scenario comparison
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+The tool supports side-by-side scenario comparison. A user can run two different incident scenarios and view the obligation outputs compared across all four streams — with differences highlighted. This is useful for understanding how a change in one variable (sector, incident type, data involved) affects the regulatory picture.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+---
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Serious harm assessment
 
-## Learn More
+The NDB scheme assessment includes a structured scoring model based on OAIC guidance. Factors assessed include data type sensitivity, encryption status, recipient identity, presence of vulnerable individuals, and ransom payment with attacker assurances.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+The engine reflects OAIC's confirmed position (H1 2024 report) that attacker assurances following ransom payment do not reduce the serious harm likelihood determination.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+---
 
-### Code Splitting
+## Validation
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+The engine logic was built from primary sources:
 
-### Analyzing the Bundle Size
+- Security of Critical Infrastructure Act 2018 (Cth) and ASD ACSC guidance
+- APRA Prudential Standard CPS 234 Information Security
+- Privacy Act 1988 Part IIIC and OAIC NDB scheme guidance including H1 2024 Notifiable Data Breaches Report
+- Corporations Act 2001 s.674 and ASX Listing Rule 3.1
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+The engine has been tested against seven constructed scenarios covering financial services, critical infrastructure, health, general business, and edge cases including ransomware with attacker assurances, insider threats with no external attacker, and BEC incidents with no data breach component.
 
-### Making a Progressive Web App
+This tool has not been formally audited or legally reviewed. It is decision support, not legal advice.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+---
 
-### Advanced Configuration
+## Stack
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+- React (frontend)
+- Clerk (Google and GitHub OAuth)
+- Supabase (PostgreSQL — scenario history)
+- Vercel (hosting and serverless functions)
+- Claude API via Vercel serverless function (narrative generation only)
 
-### Deployment
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## Regulatory currency
 
-### `npm run build` fails to minify
+Obligation logic reflects the Australian position as at June 2026. Australian cyber legislation and APRA prudential standards are subject to amendment. This tool does not update automatically.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+---
+
+## Built by
+
+**Jeshta Rao**
+GRC Analyst - ISO/IEC 27001 Lead Auditor
+Master of Cybersecurity, RMIT University, Melbourne
+
+[linkedin.com/in/jeshta-rao-3491a6197](https://www.linkedin.com/in/jeshta-rao-3491a6197)
+
+---
+
+## Disclaimer
+
+This tool provides decision support only and does not constitute legal advice. Organisations must engage qualified legal counsel before making any regulatory notification decisions. This tool covers primary federal obligations only and does not cover all state-based obligations, sector-specific variations, or overseas obligations for multinational entities.
